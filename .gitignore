@@ -1,0 +1,5 @@
+bin/*
+
+# Ignore binaries
+
+*.exe
