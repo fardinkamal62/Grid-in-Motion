@@ -22,11 +22,12 @@ A car drives through an endless world built on a strict layout grid. The road da
 6. [Controls](#controls)
 7. [Project Structure](#project-structure)
 8. [Run](#run)
-9. [Testing Without a Window](#testing-without-a-window)
-10. [Screenshots](#screenshots)
-11. [Team Contributions](#team-contributions)
-12. [Git Workflow](#git-workflow)
-13. [References](#references)
+9. [Windows Executable](#windows-executable)
+10. [Testing Without a Window](#testing-without-a-window)
+11. [Screenshots](#screenshots)
+12. [Team Contributions](#team-contributions)
+13. [Git Workflow](#git-workflow)
+14. [References](#references)
 
 ---
 
@@ -145,6 +146,8 @@ angle = distance travelled / wheel radius
 │   ├── shot_blueprint.png
 │   ├── shot_outro.png
 │   └── work_division.md
+├── .github/workflows/
+│   └── build-windows.yml
 └── .gitignore
 ```
 
@@ -158,6 +161,27 @@ source .venv/bin/activate        # Windows: .venv\Scripts\activate
 pip install -r requirements.txt
 python main.py
 ```
+
+## Windows Executable
+
+A GitHub Actions workflow builds a Windows `.exe` automatically:
+
+1. Push to `main`, or open **Actions → Build Windows executable → Run workflow**.
+2. Open the finished run and download the **GridInMotion-windows** artifact.
+3. Extract the zip and run `GridInMotion.exe`.
+
+The workflow uses Python 3.12 and PyInstaller's `--onedir` layout. Keep the whole extracted folder together; the `_internal` directory next to the `.exe` is required.
+
+To build locally on Windows instead:
+
+```bat
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt pyinstaller
+pyinstaller --noconfirm --clean --windowed --name GridInMotion main.py
+```
+
+The result is `dist\GridInMotion\GridInMotion.exe`.
 
 ## Testing Without a Window
 

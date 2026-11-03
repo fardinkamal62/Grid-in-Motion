@@ -6,3 +6,8 @@ bin/*
 .vscode
 __pycache__/
 *.pyc
+
+# PyInstaller
+build/
+dist/
+*.spec
