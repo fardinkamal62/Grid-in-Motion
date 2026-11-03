@@ -1,4 +1,6 @@
 #pragma once
+#include "mat3.h"
+
 struct State
 {
     float W = 1200, H = 800;
@@ -10,5 +12,7 @@ struct State
     float time = 0;
     bool grid = true, paused = false, debug = false, night = false;
     bool up = false, down = false;
+    bool blueprint = false, outro = false;
+    Mat3 carMatrix;                  // stored for HUD display
 };
 inline State S;

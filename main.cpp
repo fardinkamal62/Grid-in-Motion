@@ -1,5 +1,13 @@
 #include "gfx.h"
+#include "state.h"
+#include "car.h"
+#include "world.h"
+#include "ui.h"
 #include <algorithm>
+
+static Car car;
+static World world;
+static UI ui;
 
 static float clampf(float v, float a, float b) { return std::max(a, std::min(b, v)); }
 
@@ -24,6 +32,8 @@ void update(float dt)
 
     float target = 1.0f - 0.25f * (S.speed / S.maxSpeed); // zoom out when fast
     S.zoom += (target - S.zoom) * std::min(1.f, dt * 3);  // exponential ease
+
+    car.update(dt);
 }
 
 void display()
@@ -33,19 +43,34 @@ void display()
     glClear(GL_COLOR_BUFFER_BIT);
     gReset();
 
-    gPush();
-    gApply(Mat3::pivotScale(S.zoom, S.zoom, S.W / 2, S.H / 2)); // camera transform
-    gPop();
+    // 1. Draw World (road, parallax layers, camera zoom)
+    world.drawWorld();
+
+    // 2. Draw Car (body, cabin, wheels, brake lights, mirror car, debug overlay)
+    car.drawMirroredOncomingCar();
+    car.drawMainCar();
+    car.drawDebugOverlay();
+
+    // 3. Draw UI (grid overlay, speedometer, live HUD, intro/outro screens - NOT affected by camera zoom)
+    ui.drawGridOverlay();
+    ui.drawSpeedometer();
+    ui.drawMatrixHUD();
+    ui.drawIntroScreen();
+    ui.drawOutroScreen();
 
     glutSwapBuffers();
 }
 
 void timer(int)
 {
-    if (!S.paused)
+    if (!S.paused && !S.outro && S.time > 2.5f)
     {
         S.time += 0.016f;
         update(0.016f);
+    }
+    else if (S.time <= 2.5f)
+    {
+        S.time += 0.016f; // allow intro time to progress
     }
     glutPostRedisplay();
     glutTimerFunc(16, timer, 0);
@@ -73,6 +98,10 @@ void keyboard(unsigned char k, int, int)
         S.debug = !S.debug;
     if (k == 'n' || k == 'N')
         S.night = !S.night;
+    if (k == 'b' || k == 'B')
+        S.blueprint = !S.blueprint;
+    if (k == 'e' || k == 'E')
+        S.outro = !S.outro;
     if (k == ' ')
         S.paused = !S.paused;
     if (k == 27)
