@@ -3,3 +3,6 @@ bin/*
 # Ignore binaries
 
 *.exe
+.vscode
+__pycache__/
+*.pyc

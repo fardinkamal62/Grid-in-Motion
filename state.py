@@ -20,13 +20,9 @@ class State:
         self.tilt = 0.0
         self.sx = 1.0
         self.sy = 1.0
-        self.bounce = 0.0
         self.zoom = 1.0
         self.wheel_angle = 0.0
         self.braking = False
-        # oncoming (mirrored) car
-        self.oc_x = 1500.0
-        self.oc_dist = 0.0
         # toggles
         self.grid = False
         self.debug = False

@@ -5,9 +5,10 @@ pygame.draw.polygon. pygame never sees a rotation or scale.
 """
 import math
 import pygame
+import pygame.gfxdraw
 from mat3 import Mat3, translation, rotation, scaling
 
-RED = (218, 41, 28)               # Swiss red - never changes
+RED = (218, 41, 28)               # accent red - never changes
 INK_DAY, PAPER_DAY = (17, 17, 17), (240, 238, 232)
 
 SMALL, MEDIUM, BIG = 14, 28, 120  # the only three type sizes
@@ -65,10 +66,22 @@ class Gfx:
     # ---- primitives ----------------------------------------------
     def _poly(self, pts, color):
         t = self.top
-        pygame.draw.polygon(self.s, color, [t.apply(x, y) for x, y in pts])
+        p = [(int(round(x)), int(round(y)))
+             for x, y in (t.apply(px, py) for px, py in pts)]
+        pygame.gfxdraw.filled_polygon(self.s, p, color)
+        pygame.gfxdraw.aapolygon(self.s, p, color)
+
+    def poly(self, pts, color):
+        self._poly(pts, color)
 
     def rect(self, x, y, w, h, color):
         self._poly(((x, y), (x + w, y), (x + w, y + h), (x, y + h)), color)
+
+    def panel(self, x, y, w, h, color, alpha=200):
+        """Screen-space translucent panel used by the HUD and speedometer."""
+        surf = pygame.Surface((int(w), int(h)), pygame.SRCALPHA)
+        surf.fill((*color, alpha))
+        self.s.blit(surf, (x, y))
 
     def circle(self, cx, cy, r, color):
         n = 36 if r * self.top.scale_factor() > 12 else 18

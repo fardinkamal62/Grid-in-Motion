@@ -1,17 +1,16 @@
 """Grid in Motion - Car Moving on a Road   (Python / pygame port)
 
 Game loop, input and integration. All geometry goes through mat3.py.
-Run:  python src/main.py
+Run:  python main.py
 """
 import argparse
 import math
 import os
-import random
 import sys
 
 import pygame
 
-from mat3 import identity, translation as T, scaling as S
+from mat3 import identity
 from gfx import Gfx
 from state import State, W, H, MAX_SPEED, ACCEL, BRAKE, WHEEL_R
 import car
@@ -44,7 +43,7 @@ def update(st, dt, keys):
     elif down:
         st.speed -= BRAKE * dt
     else:
-        st.speed -= (st.speed * 0.25 + 15) * dt          # coasting drag
+        st.speed -= (st.speed * 0.10 + 5) * dt           # gentle coasting drag
     st.speed = clamp(st.speed, 0.0, MAX_SPEED)
     st.braking = bool(down and prev > 1)
 
@@ -58,22 +57,12 @@ def update(st, dt, keys):
     st.dist += st.speed * dt
     st.wheel_angle = (st.dist / WHEEL_R) % (2 * math.pi)  # rolling: angle = distance / radius
 
-    st.bounce = math.sin(st.dist * 0.045) * min(3.0, st.speed / 150.0)   # suspension
-    if st.speed < 30:
-        st.bounce += math.sin(st.t * 70) * 0.8                          # idle vibration
-
     st.bp += (st.bp_target - st.bp) * min(1.0, dt * 2.5)
     if abs(st.bp - st.bp_target) < 0.002:
         st.bp = st.bp_target
     base = 1.1 - 0.25 * st.speed / MAX_SPEED
     target_zoom = base + (0.8 - base) * smooth(st.bp)
     st.zoom += (target_zoom - st.zoom) * min(1.0, dt * 3)
-
-    OC_SPEED = 320.0                                      # oncoming car
-    st.oc_x -= (st.speed + OC_SPEED) * dt
-    st.oc_dist += OC_SPEED * dt
-    if st.oc_x < -500:
-        st.oc_x = 1700 + random.random() * 1800
 
 
 def render(g, st):
@@ -86,12 +75,6 @@ def render(g, st):
     g.load(cam)                                           # camera x object
     world.draw_world(g, st)
 
-    g.push()                                              # oncoming car = reflection
-    g.translate(st.oc_x, 776)
-    g.scale(-0.6, 0.6)                                    # scale x by -1 mirrors it
-    car.draw_car(g, st.oc_dist / WHEEL_R)
-    g.pop()
-
     g.push()
     g.mul(M_car)
     car.draw_car(g, st.wheel_angle, e, st.braking, st.debug)
@@ -100,7 +83,7 @@ def render(g, st):
     g.load(identity())                                    # screen-space UI
     if st.grid:
         ui.draw_grid(g)
-    ui.draw_hud(g, st, cam @ M_car, M_car)
+    ui.draw_hud(g, st, M_car)
     ui.draw_speedometer(g, st)
     ui.draw_overlay(g, st)
 

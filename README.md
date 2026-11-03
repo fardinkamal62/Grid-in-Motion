@@ -1,8 +1,8 @@
 # Grid in Motion: Car Moving on a Road
 
-A 2D computer graphics animation in **C++ / OpenGL (FreeGLUT)**, designed in the **Swiss (International Typographic) Style**.
+A 2D computer graphics animation built with **Python + pygame**. The project started as a C++/OpenGL (FreeGLUT) design; the current implementation follows the same design plan in Python.
 
-A car drives through an endless world built on a visible 12-column grid. The road dashes, buildings, typography and UI all snap to it. Every transformation is computed with our own 3×3 homogeneous matrices, not OpenGL's built-in translate/rotate/scale.
+A car drives through an endless world built on a strict layout grid. The road dashes, buildings, typography and UI all align to it. Every transformation is computed with our own 3×3 homogeneous matrices, not pygame's built-in drawing transforms. pygame is used only to open the window, fill polygons and draw text.
 
 | | |
 |---|---|
@@ -15,46 +15,54 @@ A car drives through an endless world built on a visible 12-column grid. The roa
 
 ## Table of Contents
 1. [Concept](#concept)
-2. [Swiss Style Rules](#swiss-style-rules)
+2. [Design Rules](#design-rules)
 3. [2D Transformations Used](#2d-transformations-used)
 4. [Matrix Math](#matrix-math)
 5. [Features](#features)
 6. [Controls](#controls)
 7. [Project Structure](#project-structure)
-8. [Build and Run](#build-and-run)
-9. [Team Contributions](#team-contributions)
-10. [Git Workflow](#git-workflow)
-11. [Screenshots and Demo](#screenshots-and-demo)
-12. [References](#references)
+8. [Run](#run)
+9. [Testing Without a Window](#testing-without-a-window)
+10. [Screenshots](#screenshots)
+11. [Team Contributions](#team-contributions)
+12. [Git Workflow](#git-workflow)
+13. [References](#references)
 
 ---
 
 ## Concept
 
-The camera is a **side view**, like a 2D racing game. The car stays at a fixed point on the screen (about one third from the left, grid column 4) and the world scrolls past it. The grid is not decoration: it is the structure of the world.
+The camera is a **side view**, like a 2D racing game. The car stays at a fixed point on the screen, about one third from the left, and the world scrolls past it.
 
-A live **matrix HUD** shows the 3×3 matrix applied to the car in real time, so the math is visible while the animation runs.
+A live **HUD** shows the car's transformation values in real time, so the math is visible while the animation runs.
 
-## Swiss Style Rules
+## Design Rules
 
-1. **Palette:** paper (off-white), ink (near-black), and one accent, Swiss red. Grays are only mixes of ink and paper.
+1. **Palette:** paper (off-white), ink (near-black), and one accent, red. Grays are only mixes of ink and paper.
 2. **Flat only:** no gradients, shadows, outlines or textures.
-3. **Primitives only:** rectangles, circles and straight lines.
-4. **One typeface family**, 2-3 sizes: big numerals for impact, small labels for information.
-5. **Grid:** 12 columns × 100 px on a 1200 × 800 screen. Objects snap to grid units.
+3. **Primitives only:** rectangles, circles, polygons and straight lines.
+4. **One typeface family**, a few sizes: big numerals for impact, small labels for information.
+5. **Layout grid:** 100 px units on a 1200 × 800 screen; objects align to it.
 6. **Asymmetry and whitespace:** left-aligned text, off-center composition, intentional empty space.
-7. **Red is rare:** wheels, speedometer needle, key numerals and the car stripe.
+7. **Red is reserved for:** the car body, taillights, speedometer needle and key numerals.
 8. **Day/night mode** swaps ink and paper. Red stays the same.
 
 ## 2D Transformations Used
 
 | Transformation | Where it appears |
 |---|---|
-| **Translation** | Car position, suspension bounce, scrolling road dashes, parallax layers |
-| **Rotation** | Wheel spin, body tilt on acceleration/braking, speedometer needle and ticks |
-| **Scaling** | Squash and stretch, parallax depth, camera zoom, approaching signs |
-| **Reflection** | Mirrored oncoming car (scale x by -1) |
+| **Translation** | Car position, scrolling road dashes, parallax layers, poster slide |
+| **Rotation** | Wheel spin, body tilt on acceleration/braking (pivot at rear axle), speedometer needle and ticks |
+| **Scaling** | Squash and stretch, parallax depth, camera zoom |
 | **Combination** | Pivot rotation, wheels as children of the body (matrix stack), camera × object transforms |
+
+The composition used throughout the scene is:
+
+```
+M = C · T · R(pivot) · S
+```
+
+where `C` is the camera matrix and the rest are the object's local transforms.
 
 ## Matrix Math
 
@@ -84,23 +92,21 @@ angle = distance travelled / wheel radius
 ## Features
 
 **Car**
-- Body, cabin, window and stripe built from rectangles
-- Wheels as children of the body, spinning with physically correct speed
-- Suspension bounce, body tilt (pivot at rear axle), squash and stretch
-- Mirrored oncoming car
-- Blueprint explode mode (parts fly to a grid layout and reassemble)
-- Brake lights and idle vibration
+- Body, cabin and windows drawn as polygons, with lights, mirror and trim
+- Alloy wheels as children of the body, spinning at the correct speed
+- Body tilt (pivot at rear axle), squash and stretch
+- Blueprint explode mode (parts fly apart and reassemble)
+- Brake lights
 
 **World**
-- Infinite looping road with grid-aligned lane dashes and curbs
+- Infinite looping road with evenly spaced lane dashes and curbs
 - Three parallax layers (far, mid, near) with different speeds and scales
-- Milepost numerals and approaching signs as typographic scenery
 - Smooth camera zoom (out at high speed, in when slow)
 
 **UI and Design**
-- Toggleable 12-column grid overlay
+- Toggleable alignment grid overlay
 - Speedometer with rotating needle and tick marks
-- Live transformation HUD (3×3 matrix and readable values)
+- Live transformation HUD (position, rotation, scale, wheel angle, zoom)
 - Debug mode showing pivots and coordinate axes
 - Poster-style intro and closing outro
 - Day/night mode
@@ -111,11 +117,12 @@ angle = distance travelled / wheel radius
 |---|---|
 | `↑` | Accelerate |
 | `↓` | Brake |
-| `G` | Toggle grid overlay |
+| `G` | Toggle alignment grid overlay |
 | `D` | Toggle debug mode (pivots and axes) |
 | `N` | Toggle day/night |
 | `B` | Blueprint explode / reassemble |
-| `E` | Show outro |
+| `E` | Show outro (press again to close) |
+| `Enter` | Skip intro |
 | `Space` | Pause |
 | `Esc` | Quit |
 
@@ -124,35 +131,79 @@ angle = distance travelled / wheel radius
 ```
 .
 ├── README.md
-├── docs/                  report, style sheet, screenshots
-├── src/
-│   ├── mat3.h             3×3 matrix math
-│   ├── gfx.h              matrix stack, primitives, palette
-│   ├── state.h            shared global state
-│   ├── car.h              car, wheels, effects        (Fardin)
-│   ├── world.h            road, parallax, camera      (Maheer)
-│   ├── ui.h               grid, HUD, speedometer      (Shoaib)
-│   └── main.cpp           game loop, input, integration
+├── requirements.txt
+├── main.py          game loop, input, integration
+├── mat3.py          3×3 matrix math (T, R, S, pivot rotation)
+├── gfx.py           matrix stack, primitives, palette, text
+├── state.py         shared state and constants
+├── car.py           car, wheels, blueprint parts, debug      (Fardin)
+├── world.py         road, parallax, camera                   (Maheer)
+├── ui.py            grid, HUD, speedometer, intro/outro      (Shoaib)
+├── docs/
+│   ├── shot_play.png
+│   ├── shot_grid_debug.png
+│   ├── shot_blueprint.png
+│   ├── shot_outro.png
+│   └── work_division.md
 └── .gitignore
 ```
 
-## Build and Run
+## Run
 
-**Requirements:** a C++17 compiler, OpenGL, and FreeGLUT.
-
-```bash
-# Linux
-g++ -std=c++17 main.cpp -o bin/car -lGL -lGLU -lglut
-
-# Windows (MinGW + freeglut)
-g++ -std=c++17 main.cpp -o bin\car -lfreeglut -lopengl32 -lglu32
-
-# macOS
-g++ -std=c++17 main.cpp -o bin/car -framework OpenGL -framework GLUT
-```
-
-Run:
+**Requirements:** Python 3.10+ and the packages in `requirements.txt` (pygame-ce, a drop-in replacement for pygame that ships prebuilt wheels for current Python versions).
 
 ```bash
-./bin/car
+python -m venv .venv
+source .venv/bin/activate        # Windows: .venv\Scripts\activate
+pip install -r requirements.txt
+python main.py
 ```
+
+## Testing Without a Window
+
+The program can render a fixed number of frames and save a screenshot, which is useful for checking changes without opening a window:
+
+```bash
+python main.py --shot out.png --frames 200 --hold up --grid --debug
+```
+
+Available flags:
+
+| Flag | Effect |
+|---|---|
+| `--shot PATH` | Render frames, save a PNG and exit (uses SDL's dummy video driver) |
+| `--frames N` | Number of frames to simulate before saving (default 120) |
+| `--hold up\|down\|none` | Hold an input for the simulated frames |
+| `--grid` | Start with the grid overlay on |
+| `--debug` | Start with debug mode on |
+| `--night` | Start in day/night mode |
+| `--blueprint` | Start with the car exploded |
+| `--outro` | Start on the outro frame |
+| `--skip-intro` | Skip the intro overlay |
+
+## Screenshots
+
+| Play | Grid and debug |
+|---|---|
+| ![Play](docs/shot_play.png) | ![Grid and debug](docs/shot_grid_debug.png) |
+
+| Blueprint explode | Outro |
+|---|---|
+| ![Blueprint](docs/shot_blueprint.png) | ![Outro](docs/shot_outro.png) |
+
+## Team Contributions
+
+| Member | Areas |
+|---|---|
+| **Fardin** | Matrix math and matrix stack, car and wheels, blueprint mode, main loop, integration |
+| **Maheer** | Road, looping, parallax layers, camera |
+| **Shoaib** | Grid overlay, typography, speedometer, HUD, debug mode, intro/outro |
+
+## Git Workflow
+
+Each member works on their own branch (`fardin`, `maheer`, `shoaib`) and merges into `main` only when the build runs. Merge one branch at a time and test after each merge. The draw order is world (back to front) → car → UI; the camera transform wraps the world and the car, but never the UI.
+
+## References
+
+- pygame documentation — <https://www.pygame.org/docs/>
+- James D. Foley, Andries van Dam, Steven K. Feiner, John F. Hughes, *Computer Graphics: Principles and Practice*
